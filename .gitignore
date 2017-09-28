@@ -1,0 +1,16 @@
+.DS_Store
+/data
+/target
+/classes
+/checkouts
+pom.xml
+pom.xml.asc
+*.jar
+*.class
+/.lein-*
+/.nrepl-port
+tweets*.ttl
+emails*.ttl
+*.#*.clj
+*#*.clj#
+*.sh
