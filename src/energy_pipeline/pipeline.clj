@@ -22,6 +22,7 @@
 (def example-dir-location "/Users/LynhAl/Downloads/FoodStoreMeters_1ASGas_fixed")
 (def example-dir-2 "/Users/LynhAl/Downloads/Elec")
 (def example-out-location "/Users/LynhAl/Documents/elec.csv")
+(def example-dir-small "/Users/LynhAl/Downloads/Elec-small")
 
 (comment (with-open [writer (io/writer example-out-location)]
            (csv/write-csv writer
@@ -44,6 +45,7 @@
 (def get-rows
   (fn [file-path]
     (-> (read-dataset file-path :format :xls)
+        (drop-rows 1)
         :rows)))
 
 (defn sanitize-name-column [row]
@@ -53,28 +55,46 @@
 
     (let [cedar-id (-> name
                        (clojure.string/replace #"[^0-9]" "")
-                       clojure.string/trim)]
-      (assoc row "Cedar ID" cedar-id)
+                       clojure.string/trim)
+          
+          new-row (-> row
+                      (assoc "cedar-id" cedar-id)
+                      (assoc "bh" cedar-id))]
+      new-row
       )))
+
+(comment (or (get test-second-row "Name")
+             (get test-second-row "Site Name")
+             (get test-second-row "bh")))
 
 (defn write-dataset-to-csv [rows-seq out-location]
   (let [sanitized-rows (->> (map sanitize-name-column rows-seq)
                             (filter identity))
         ds (make-dataset sanitized-rows)]
-
     (write-dataset out-location
                    ds
                    :format :csv)))
 
 (defn convert-excel-to-csv [data-dir out-location]
   (let [file-locations (get-list-of-file-paths data-dir #"\.xlsx$")
-        rows-seq (lazy-cat (map get-rows file-locations))]
+        rows-seq (->> (concat (map get-rows file-locations))
+                      (apply concat))]
     (write-dataset-to-csv rows-seq out-location)))
 
 ;; (convert-excel-to-csv example-dir-location example-out-location)
 
-(defn excel-csv-convert [dir]
-  )
+(defn excel-csv-convert [data-dir]
+  (let [file-locations (get-list-of-file-paths data-dir #"\.xlsx$")]
+    (doseq [file file-locations]
+      (let [out-file-path (clojure.string/replace file #"\.xlsx$" ".csv")]
+        (-> (get-rows file)
+            (write-dataset-to-csv out-file-path))))))
+
+(comment (doseq [file example-locs]
+           (let [out-file-path (clojure.string/replace file #"\.xlsx$" ".csv")]
+             (println out-file-path))))
+
+;; (exel-csv-convert example-dir-2)
 
 (defn copy-file [source-path dest-path]
   (copy (file source-path) (file dest-path)))
